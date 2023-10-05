@@ -1,0 +1,474 @@
+---
+title: "HR Analysis - Employee's Performance"
+author: "Alice"
+date: "2023-09-27"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+## 1. Overview
+```{r loading packages}
+library(tidyverse)
+library(here)
+library(readr)
+library(skimr)
+library(janitor)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+```{r overview of dataset}
+employees <- read_csv("/Users/hafanhh/Desktop/Uncleaned_employees_final_dataset (1) copy.csv")
+skim_without_charts(employees)
+glimpse(employees)
+```
+```{r count distinct}
+# Count distinct:
+employees %>% summarise(
+  n_employees = n_distinct(employee_id, na.rm = TRUE), 
+  n_department = n_distinct(department, na.rm = TRUE),
+  n_region = n_distinct(region, na.rm = TRUE),
+  n_education = n_distinct(education, na.rm = TRUE),
+  n_recruitment_channel = n_distinct(recruitment_channel, na.rm = TRUE),
+  n_KPI_met_more_than_80 = sum(KPIs_met_more_than_80, na.rm = TRUE),
+  n_awards_won = sum(awards_won, na.rm = TRUE)
+)
+```
+```{r average}
+# The Average of:
+employees %>% summarise(
+  AVG_age = round(mean(age, na.rm = TRUE), 1),
+  AVG_tranining = round(mean(no_of_trainings, na.rm = TRUE), 1),
+  AVG_rating = round(mean(previous_year_rating, na.rm = TRUE), 1),
+  AVG_year_working = round(mean(length_of_service, na.rm = TRUE), 1),
+  AVG_training_score = round(mean(avg_training_score, na.rm = TRUE), 1)
+)
+```
+
+## 2. Data Analysis and Visualisation:
+### 2.1. Gender Analysis:
+```{r Gender}
+# Gender distribution as number of employees
+gender_group <- employees %>% 
+  group_by(gender) %>% 
+  summarise(n_distinct(employee_id))
+head(gender_group)
+```
+```{r}
+gender <- gender_group$gender
+employee_count <- gender_group$`n_distinct(employee_id)`
+
+chart2 <- ggplot(gender_group, aes(x="", y = employee_count, fill = gender)) + geom_col(color = 'white') +
+  geom_text(aes(label = employee_count),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Gender Distribution') +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart2 + scale_fill_manual(values = c("lightpink", "lightblue"), name = 'Gender', labels = c('Female', 'Male')) + theme(legend.text = element_text(size = 10), legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm")) 
+```
+```{r}
+# Awards won by Gender:
+gender_group1 <- employees %>% 
+  group_by(gender) %>% 
+  summarise(Awards_count = sum(awards_won, na.rm = TRUE))
+head(gender_group1)
+```
+```{r}
+gender <- c('Female', 'Male')
+awards <- gender_group1$Awards_count
+chart3 <- ggplot(gender_group1, aes(x = '', y = awards, fill = gender)) +
+  geom_col(color = 'white') +
+  geom_text(aes(label = awards),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Awards Won by Genders') +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart3 + scale_fill_manual(values = c("lightpink", "lightblue"), name = 'Gender', labels = c('Female', 'Male')) +theme(legend.text = element_text(size = 10),
+               legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm"))
+```
+```{r}
+# KPI met more than 80 by Gender
+gender_group2 <- employees %>% 
+  group_by(gender) %>% 
+  summarise(KPI_count = sum(KPIs_met_more_than_80, na.rm = TRUE))
+head(gender_group2)
+```
+```{r}
+gender <- c('Female', 'Male')
+KPI_count <- gender_group2$KPI_count
+chart4 <- ggplot(gender_group2, aes(x = '', y = KPI_count, fill = gender)) +
+  geom_col(color = 'white') +
+  geom_text(aes(label = KPI_count),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Number of KPI met more than 80 by Gender') +
+  theme(plot.title = element_text(hjust = 0.5, size = 12),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart4 + scale_fill_manual(values = c("lightpink", "lightblue"), name = 'Gender', labels = c('Female', 'Male')) +theme(legend.text = element_text(size = 10),
+               legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm"))
+```
+### 2.2. Department Analysis:
+```{r Department}
+# Department Distribution by Gender
+dep_gen <- group_by(employees, department, gender)
+dep_gen <- summarise(dep_gen, employee_count = n_distinct(employee_id, na.rm = TRUE))
+head(dep_gen)
+```
+```{r}
+deparment <- dep_gen$department
+gender <- dep_gen$gender
+
+chart5 <- ggplot (dep_gen, aes(x = deparment, y = employee_count, fill = gender)) +
+  geom_bar(stat = 'identity') +
+  xlab('') + ylab('Number of Employees') +
+  ggtitle('Distribution of Gender in Departments') +
+  geom_text(aes(label = employee_count),
+            position = position_stack(vjust = 0.5)) +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 8))
+chart5 + scale_fill_manual(values = c("lightpink", "lightblue"),
+                           name = 'Gender', labels = c('Female', 'Male')) +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+    legend.position = c(0.1, 0.8),
+        legend.text = element_text( size = 10))
+```
+```{r}
+# Count of Awards won in each Department by Gender
+dep_aw <- group_by(employees, department, gender)
+dep_aw <- summarise(dep_aw, award_count = sum(awards_won, na.rm = TRUE))
+head(dep_aw)
+```
+```{r}
+deparment <- dep_aw$department
+gender <- dep_aw$gender
+
+chart6 <- ggplot (dep_aw, aes(x = deparment, y = award_count, fill = gender)) +
+  geom_bar(stat = 'identity') +
+  xlab('') + ylab('Number of Employees') +
+  ggtitle('Awards won Count by Gender in Departments') +
+  geom_text(aes(label = award_count),
+            position = position_stack(vjust = 0.5)) +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 8))
+chart6 + scale_fill_manual(values = c("lightpink", "lightblue"),
+                           name = 'Gender', labels = c('Female', 'Male')) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+    legend.position = c(0.1, 0.8),
+        legend.text = element_text( size = 10))
+```
+```{r}
+# Count of Awards won in each Department by Gender
+dep_kpi <- group_by(employees, department, gender)
+dep_kpi <- summarise(dep_kpi, employee_count = sum(KPIs_met_more_than_80, na.rm = TRUE))
+head(dep_kpi)
+```
+```{r}
+deparment <- dep_kpi$department
+gender <- dep_kpi$gender
+
+chart7 <- ggplot (dep_kpi, aes(x = deparment, y = employee_count, fill = gender)) +
+  geom_bar(stat = 'identity') +
+  xlab('') + ylab('Number of Employees') +
+  ggtitle('Count of Employee with KPI met more than 80 by Gender in Departments') +
+  geom_text(aes(label = employee_count),
+            position = position_stack(vjust = 0.5)) +
+  theme(axis.text = element_text(size = 8),
+        axis.title = element_text(size = 8))
+chart7 + scale_fill_manual(values = c("lightpink", "lightblue"),
+                           name = 'Gender', labels = c('Female', 'Male')) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+    legend.position = c(0.1, 0.8),
+        legend.text = element_text( size = 10))
+```
+### 2.3. Region Analysis:
+```{r Top Region}
+# Top 10 Region by Employee Count
+region <- employees %>% 
+  group_by(region) %>%
+  summarise(employee_count = n_distinct(employee_id, na.rm = TRUE))
+top_region <- head(arrange(region,
+                           desc(employee_count)), n = 10)
+region <- top_region$region
+employee_count <- top_region$employee_count
+
+chart8 <- ggplot(top_region, aes(x = reorder(region, employee_count), y = employee_count, fill = employee_count)) +
+  geom_bar(stat = 'identity', show.legend = FALSE) +
+  xlab('') + ylab('Employee Count') +
+  ggtitle("Top 10 Largest Regions") +
+  geom_text(aes(label = employee_count),
+            position = position_stack(vjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13) ,
+          axis.text = element_text(size = 10) ,
+          axis.title = element_text(size = 10),
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  coord_flip() + #Flip chart
+  scale_fill_gradient(low = 'pink', high = 'blue')
+show(chart8)
+```
+```{r}
+# Top 10 Regions by Awards won
+reg_aw <- employees %>% 
+  group_by(region) %>% 
+  summarise(awards_won = sum(awards_won, na.rm = TRUE))
+top_aw_reg <- head(arrange(reg_aw,
+                           desc(awards_won)), n = 10)
+region <- top_aw_reg$region
+awards_won <- top_aw_reg$awards_won
+
+chart9 <- ggplot(top_aw_reg, aes(x = reorder(region, awards_won), y = awards_won, fill = awards_won)) +
+  geom_bar(stat = 'identity', show.legend = FALSE) +
+  xlab('') + ylab('Number of Awards won') +
+  ggtitle("Top 10 Regions winning most Awards") +
+  geom_text(aes(label = awards_won),
+            position = position_stack(vjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13) ,
+          axis.text = element_text(size = 10) ,
+          axis.title = element_text(size = 10),
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  coord_flip() +
+  scale_fill_gradient(low = 'pink', high = 'blue')
+show(chart9)
+```
+```{r}
+# Top 10 Regions by KPIs count met more than 80
+reg_kpi <- employees %>% 
+  group_by(region) %>% 
+  summarise(kpi_count = sum(KPIs_met_more_than_80, na.rm = TRUE))
+top_kpi_reg <- head(arrange(reg_kpi,
+                           desc(kpi_count)), n = 10)
+region <- top_kpi_reg$region
+kpi_count <- top_kpi_reg$kpi_count
+
+chart10 <- ggplot(top_kpi_reg, aes(x = reorder(region, kpi_count), y = kpi_count, fill = kpi_count)) +
+  geom_bar(stat = 'identity', show.legend = FALSE) +
+  xlab('') + ylab('Number of KPIs met more than 80') +
+  ggtitle("Top 10 Regions getting most KPIs met more than 80") +
+  geom_text(aes(label = kpi_count),
+            position = position_stack(vjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13) ,
+          axis.text = element_text(size = 10) ,
+          axis.title = element_text(size = 10),
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  coord_flip() +
+  scale_fill_gradient(low = 'pink', high = 'blue')
+show(chart10)
+```
+### 2.4. Education Analysis:
+```{r Education}
+# Eployees Distribution by Education
+edu_dis <- employees %>% 
+  group_by(education) %>% 
+  summarise(employee_count = n_distinct(employee_id, na.rm = TRUE)) %>% 
+  filter(!is.na(education)) %>% 
+  arrange(desc(employee_count))
+head(edu_dis)
+```
+```{r}
+education <- edu_dis$education
+employee_count <- edu_dis$employee_count
+
+chart1 <- ggplot(edu_dis, aes(x="", y = employee_count, fill = education)) + geom_col(color = 'white') +
+  geom_text(aes(label = employee_count),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Eployees Distribution by Education') +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart1 + scale_fill_brewer(palette = 'Blues', name = 'Education') + theme(legend.text = element_text(size = 10), legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm")) 
+```
+```{r}
+# Awards won Distribution by Education
+edu_aw <- employees %>% 
+  group_by(education) %>% 
+  summarise(awards_won = sum(awards_won, na.rm = TRUE)) %>% 
+  filter(!is.na(education)) %>% 
+  arrange(desc(awards_won))
+head(edu_aw)
+```
+```{r}
+education <- edu_aw$education
+awards_won <- edu_aw$awards_won
+
+chart11 <- ggplot(edu_aw, aes(x="", y = awards_won, fill = education)) + geom_col(color = 'white') +
+  geom_text(aes(label = awards_won),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Awards Distribution by Education') +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart11 + scale_fill_brewer(palette = 'Blues', name = 'Education') + theme(legend.text = element_text(size = 10), legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm")) 
+```
+```{r}
+# Count of KPIs met more than 80 by Education
+edu_kpi <- employees %>% 
+  group_by(education) %>% 
+  summarise(kpi_count = sum(KPIs_met_more_than_80, na.rm = TRUE)) %>% 
+  filter(!is.na(education)) %>% 
+  arrange(desc(kpi_count))
+head(edu_kpi)
+```
+```{r}
+education <- edu_kpi$education
+kpi_count <- edu_kpi$kpi_count
+
+chart12 <- ggplot(edu_kpi, aes(x="", y = kpi_count, fill = education)) + geom_col(color = 'white') +
+  geom_text(aes(label = kpi_count),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = 'y') +
+  ggtitle('Count of KPIs met more than 80 by Education') +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank())
+chart12 + scale_fill_brewer(palette = 'Blues', name = 'Education') + theme(legend.text = element_text(size = 10), legend.title = element_text(hjust = 0.5, size = 12), legend.key.size = unit(0.5, "cm")) 
+```
+### 2.5. Relationship between Variables: 
+```{r Relationship}
+# Relationship between Number of Training and number of KPIs met more than 80
+re1 <- employees %>% 
+  group_by(region, department) %>% 
+  summarise(kpi_count = sum(KPIs_met_more_than_80, na.rm = TRUE),
+            training_count = sum(no_of_trainings, na.rm = TRUE))
+head(re1)
+```
+
+```{r}
+# Scatter Chart
+kpi_count <- re1$kpi_count
+training_count <- re1$training_count
+department <- re1$department
+region <- re1$region
+ggplot() +
+  geom_jitter(aes(x = kpi_count, y = training_count, colour = region, size = department), alpha = 0.6) + xlab('KPI Count') + ylab('Training Count') +
+   ggtitle('Number of Training Vs.\n Number of KPIs met more than 80') +
+  labs(color = '', size = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        legend.key.height = unit(0.5, 'cm'),
+        legend.key.width = unit(0.5, "cm"),
+        legend.title = element_text(size = 8))
+```
+```{r}
+# Relationship between Length of Service and number of KPIs met more than 80
+re2 <- employees %>% 
+  group_by(region, department) %>% 
+  summarise(kpi_count = sum(KPIs_met_more_than_80, na.rm = TRUE),
+            year_count = mean(length_of_service, na.rm = TRUE))
+head(re2)
+```
+```{r}
+# Scatter Chart
+kpi_count <- re2$kpi_count
+year_count <- re2$year_count
+department <- re2$department
+region <- re2$region
+ggplot() +
+  geom_jitter(aes(x = kpi_count, y = year_count, colour = region, size = department), alpha = 0.6) + xlab('KPI Count') + ylab('Working Year Count') +
+   ggtitle('Number of Year in Working Vs.\n Number of KPIs met more than 80') +
+  labs(color = '', size = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        legend.key.height = unit(0.5, 'cm'),
+        legend.key.width = unit(0.5, "cm"),
+        legend.title = element_text(size = 8))
+```
+```{r}
+# Relationship between Length of Service and number of KPIs met more than 80
+re3 <- employees %>% 
+  group_by(region, department) %>% 
+  summarise(award_count = sum(awards_won, na.rm = TRUE),
+            year_count = mean(length_of_service, na.rm = TRUE))
+head(re3)
+```
+```{r}
+# Scatter Chart
+award_count <- re3$award_count
+year_count <- re3$year_count
+department <- re3$department
+region <- re3$region
+ggplot() +
+  geom_jitter(aes(x = award_count, y = year_count, colour = region, size = department), alpha = 0.6) + xlab('Award Count') + ylab('Working Year Count') +
+   ggtitle('Number of Year in working Vs.\n Number of Awards won') +
+  labs(color = '', size = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        legend.key.height = unit(0.5, 'cm'),
+        legend.key.width = unit(0.5, "cm"),
+        legend.title = element_text(size = 8))
+```
+```{r}
+# Relationship between Length of Service and the Previous Year Rating
+re4 <- employees %>% 
+  group_by(region, department) %>% 
+  summarise(rating = mean(previous_year_rating, na.rm = TRUE),
+            year_count = mean(length_of_service, na.rm = TRUE))
+head(re4)
+```
+```{r}
+# Scatter Chart
+rating <- re4$rating
+year_count <- re4$year_count
+department <- re4$department
+region <- re4$region
+ggplot() +
+  geom_jitter(aes(x = rating, y = year_count, colour = region, size = department), alpha = 0.6) + xlab('Rating') + ylab('Working Year Count') +
+   ggtitle('Number of Year in working Vs.\n Average Ratings') +
+  labs(color = '', size = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 13),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        legend.key.height = unit(0.5, 'cm'),
+        legend.key.width = unit(0.5, "cm"),
+        legend.title = element_text(size = 8))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
